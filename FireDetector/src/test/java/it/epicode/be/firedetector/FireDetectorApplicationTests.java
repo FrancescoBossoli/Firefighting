@@ -42,6 +42,9 @@ class FireDetectorApplicationTests {
 	@Resource
 	FireDetectorService fS;
 	
+	@Resource
+	RemoteAccessService raS;
+	
 	Probe probe;
 	FireDetector detector;
 	Latitude x;
@@ -79,7 +82,7 @@ class FireDetectorApplicationTests {
 	
 	@Test
 	@DisplayName("Verifica dei dati presenti nel Database dopo la prima run")
-	public void dataAvailabilityCheck() {
+	public void testDataAvailability() {
 		
 		Probe p = pS.getProbeByCoordinates(x, y).get();		
 		assertEquals(p.getName(), probe.getName());
@@ -102,11 +105,12 @@ class FireDetectorApplicationTests {
 	@DisplayName("Controllo sull'effettiva mobilitazione dell'Observer")
 	public void testEmergencyCall() {
 		
-		FireDetector f = mock(FireDetector.class);
-		Probe p = mock(Probe.class);
-		p.register(f);
-		p.scan();
-		if (p.getDanger() > 5) verify(f, times(1)).update(p);
+		FireDetector f = mock(FireDetector.class);		
+		probe.register(f);
+		while (probe.getDanger() < 6) {
+			probe.scan();
+		}
+		verify(f, times(1)).update(probe);
 	}
 	
 	@Test
@@ -132,7 +136,6 @@ class FireDetectorApplicationTests {
 	@DisplayName("Assicura che la stringa ritornata sia il token comunicato dal server esterno")
 	public void testTokenFetching() {		
 		
-		RemoteAccessService raS = new RemoteAccessService();
 		assertTrue(raS.getToken().startsWith("ey"));		
 	}
 	
@@ -141,7 +144,6 @@ class FireDetectorApplicationTests {
 	@DisplayName("Assicura la corretta comunicazione tra i 2 server, ottenendo il messaggio di risposta previsto")			
 	public void testServerCommunication() {
 		
-		RemoteAccessService raS = new RemoteAccessService();
 		String alarmUrl = "http://localhost:1515/alarm?idsonda=" + probe.getId() + "&lat=" + raS.parse(x.toString()) 
 						+ "&lon=" + raS.parse(y.toString()) + "&smokelevel=" + 9;
 		
